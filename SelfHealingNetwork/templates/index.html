@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Healing Network Dashboard</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h4 class="mb-0"><i class="bi bi-shield-lock-fill me-2"></i>Self-Healing Net</h4>
+                <small class="text-muted">Automatic Failure Detection & Recovery</small>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-section="dashboard">
+                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="topology">
+                            <i class="bi bi-diagram-3 me-2"></i>Network Topology
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="failures">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Failure Detection
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="recovery">
+                            <i class="bi bi-arrow-repeat me-2"></i>Recovery Logs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="settings">
+                            <i class="bi bi-gear me-2"></i>Settings
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="d-flex align-items-center">
+                    <span class="status-indicator bg-success me-2" id="sidebarStatus"></span>
+                    <span class="text-white" id="sidebarStatusText">Monitoring Active</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="mainContent" class="main-content">
+            <!-- Top Navbar -->
+            <nav class="top-navbar">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-icon d-lg-none me-3" id="sidebarToggle"
+                            data-bs-toggle="tooltip" data-bs-placement="right"
+                            data-bs-title="Show or hide the navigation">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h3 class="mb-0"><i class="bi bi-shield-lock-fill me-2 text-primary"></i>Self-Healing Network</h3>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="network-status d-flex align-items-center gap-2"
+                         data-bs-toggle="tooltip" data-bs-placement="bottom"
+                         data-bs-title="Rolled up from /api/status on every poll">
+                        <span class="status-dot" id="navStatusDot"></span>
+                        <span class="fw-medium" id="navStatusText" aria-live="polite">Network Healthy</span>
+                    </div>
+                    <span class="badge bg-primary" id="lastUpdate" aria-live="polite">Last updated: --:--:--</span>
+                </div>
+            </nav>
+
+            <!-- Dashboard Section -->
+            <section id="section-dashboard" class="content-section">
+                <!-- Summary Cards -->
+                <div class="row g-3 mb-4" id="summaryCards">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stat-card h-100" data-bs-toggle="tooltip"
+                             data-bs-title="End hosts discovered by the monitoring sweep">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label mb-1">Total Hosts</p>
+                                        <h2 class="stat-value text-primary mb-0" id="cardTotalHosts">10</h2>
+                                    </div>
+                                    <div class="stat-icon bg-primary-light">
+                                        <i class="bi bi-pc-display"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stat-card h-100" data-bs-toggle="tooltip"
+                             data-bs-title="Layer 2 switches in the topology">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label mb-1">Total Switches</p>
+                                        <h2 class="stat-value text-info mb-0" id="cardTotalSwitches">4</h2>
+                                    </div>
+                                    <div class="stat-icon bg-info-light">
+                                        <i class="bi bi-hdd-network"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stat-card h-100" data-bs-toggle="tooltip"
+                             data-bs-title="Hosts and switches currently passing their health check">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label mb-1">Active Nodes</p>
+                                        <h2 class="stat-value text-success mb-0" id="cardActiveNodes">14</h2>
+                                    </div>
+                                    <div class="stat-icon bg-success-light">
+                                        <i class="bi bi-check-circle"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stat-card h-100" data-bs-toggle="tooltip"
+                             data-bs-title="Nodes the detector has flagged for recovery">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label mb-1">Failed Nodes</p>
+                                        <h2 class="stat-value text-danger mb-0" id="cardFailedNodes">0</h2>
+                                    </div>
+                                    <div class="stat-icon bg-danger-light">
+                                        <i class="bi bi-x-circle"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3"><i class="bi bi-controller me-2"></i>Network Controls</h5>
+                                <div class="d-flex flex-wrap gap-2" id="controlButtons">
+                                    <button class="btn btn-success" id="btnStartMonitoring">
+                                        <i class="bi bi-play-fill me-1"></i>Start Monitoring
+                                    </button>
+                                    <button class="btn btn-danger" id="btnStopMonitoring" disabled>
+                                        <i class="bi bi-stop-fill me-1"></i>Stop Monitoring
+                                    </button>
+                                    <button class="btn btn-warning" id="btnSimulateFailure" type="button">
+                                        <i class="bi bi-lightning me-1"></i>Simulate Failure
+                                    </button>
+                                    <button class="btn btn-info" id="btnRecoverNetwork">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Recover Network
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network Topology & Performance Chart -->
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-8">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Network Topology</h5>
+                                <span class="badge bg-success" id="topologyLinkCount">15 Links Active</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="topology-container" id="topologyContainer">
+                                    <svg class="topology-graph" id="topologyCanvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Network topology graph"></svg>
+                                    <div class="topology-placeholder" id="topologyPlaceholder">
+                                        <div class="skeleton-graph" aria-hidden="true">
+                                            <span class="skeleton skeleton-node switch"></span>
+                                            <span class="skeleton skeleton-link"></span>
+                                            <span class="skeleton skeleton-node"></span>
+                                            <span class="skeleton skeleton-link"></span>
+                                            <span class="skeleton skeleton-node"></span>
+                                        </div>
+                                        <i class="bi bi-diagram-3"></i>
+                                        <p>Network topology visualization</p>
+                                        <small class="text-muted">10 hosts · 4 switches · 15 links</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Network Health Trend</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="health-chart-wrap">
+                                    <canvas id="healthChart" aria-label="Network health percentage over the last polls" role="img"></canvas>
+                                    <p class="health-chart-empty" id="healthChartEmpty">Collecting health samples...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Failure Alerts & Recovery Status -->
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Failure Alerts</h5>
+                                <span class="badge bg-danger" id="alertCount">0 Active</span>
+                            </div>
+                            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                <div id="alertsList" class="alert-list">
+                                    <div class="text-center text-muted py-4">No active failures detected</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>Recovery Status</h5>
+                                <span class="badge bg-success" id="recoveryCount">0 Recoveries</span>
+                            </div>
+                            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                <div id="recoveryList" class="recovery-list">
+                                    <div class="text-center text-muted py-4">No recovery events</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event History -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Event History</h5>
+                                <button class="btn btn-sm btn-outline-secondary" id="btnRefreshLogs"
+                                        data-bs-toggle="tooltip" data-bs-title="Re-read the last 100 monitoring log rows">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="eventsTable">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th style="width: 150px;">Time</th>
+                                                <th style="width: 120px;">Type</th>
+                                                <th style="width: 120px;">Device</th>
+                                                <th>Message</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="eventsBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted py-4">Loading events...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Network Topology Section (detailed) -->
+            <section id="section-topology" class="content-section d-none">
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Detailed Network Topology</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="topology-container" style="height: 500px;" id="detailedTopology">
+                                    <svg class="topology-graph" id="detailedTopologyCanvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Detailed network topology graph"></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Hosts (10)</h5></div>
+                            <div class="card-body" id="hostsList"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Switches (4)</h5></div>
+                            <div class="card-body" id="switchesList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Failure Detection Section -->
+            <section id="section-failures" class="content-section d-none">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Simulate Failure</h5></div>
+                            <div class="card-body">
+                                <form id="failureForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Failure Type</label>
+                                        <select class="form-select" id="failureType">
+                                            <option value="link">Link Failure</option>
+                                            <option value="host">Host Failure</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3" id="linkFailureFields">
+                                        <label class="form-label">Source Device</label>
+                                        <select class="form-select" id="failureSource"></select>
+                                    </div>
+                                    <div class="mb-3" id="linkFailureTargetFields">
+                                        <label class="form-label">Target Device</label>
+                                        <select class="form-select" id="failureTarget"></select>
+                                    </div>
+                                    <div class="mb-3" id="hostFailureFields" style="display:none;">
+                                        <label class="form-label">Host Device</label>
+                                        <select class="form-select" id="failureHost"></select>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="bi bi-lightning me-1"></i>Simulate Failure
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Active Failures</h5></div>
+                            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                <div id="activeFailuresList">
+                                    <div class="text-center text-muted py-4">Loading active failures...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Alternative Paths</h5></div>
+                            <div class="card-body" id="alternativePathsList">
+                                <div class="text-center text-muted py-4">Loading alternative paths...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recovery Logs Section -->
+            <section id="section-recovery" class="content-section d-none">
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Recovery History</h5></div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Failure</th>
+                                                <th>Alternative Path</th>
+                                                <th>Status</th>
+                                                <th>Duration</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recoveryHistoryBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-4">No recovery events recorded</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="section-settings" class="content-section d-none">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Monitoring Settings</h5></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Check Interval (seconds)</label>
+                                    <input type="number" class="form-control" id="checkInterval" value="2" min="1" max="60">
+                                </div>
+                                <div class="mb-3 form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoRecovery" checked>
+                                    <label class="form-check-label" for="autoRecovery">Enable Automatic Recovery</label>
+                                </div>
+                                <div class="mb-3 form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="demoMode" checked>
+                                    <label class="form-check-label" for="demoMode">Demo Mode (Simulated)</label>
+                                </div>
+                                <button class="btn btn-primary" id="btnSaveSettings">
+                                    <i class="bi bi-save me-1"></i>Save Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Network Configuration</h5></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Total Hosts</label>
+                                    <input type="number" class="form-control" id="configHosts" value="10" min="2" max="50">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Total Switches</label>
+                                    <input type="number" class="form-control" id="configSwitches" value="4" min="1" max="20">
+                                </div>
+                                <button class="btn btn-secondary" id="btnResetNetwork">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Reset Network
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Failure Detail Modal -->
+    <div class="modal fade" id="failureModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Failure Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="failureModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="btnTriggerRecovery">
+                        <i class="bi bi-arrow-repeat me-1"></i>Trigger Recovery
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

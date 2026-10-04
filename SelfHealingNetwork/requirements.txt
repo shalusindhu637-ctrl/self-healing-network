@@ -1,0 +1,12 @@
+Flask==3.0.0
+networkx==3.2.1
+sqlite3
+threading
+time
+json
+logging
+datetime
+random
+subprocess
+sys
+os
